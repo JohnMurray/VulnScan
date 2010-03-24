@@ -1,0 +1,18 @@
+PROGRAM REQUIREMENTS
+----------
+	1. Ruby >= 1.8
+	2. Ruby Gems
+	3. Mechanize (Ruby Gem)
+	4. Hpricot (Ruby Gem)
+	5. Linux environment with specefied libraries
+		a. ...
+		b. all unpacking libraries
+		c. ...
+
+
+
+1. Install Ruby
+	a. In Linux (Ubuntu/Debian) : apt-get install ruby
+	b. In Windows : http://link-to-ruby-download-page
+2. Install Ruby Gems
+3. Hpricot
