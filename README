@@ -1,0 +1,16 @@
+Project Name: VulnScan - a vulnerability scanner in Ruby.
+Authors: John Murray, 
+Licensing: --
+
+Description:
+	--the long description of the project here
+	
+Notes:
+	--whatever else you might want to save
+	-- program only supports following formats
+		...
+		tar
+		zip
+		etc.
+		...
+
