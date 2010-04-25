@@ -2,14 +2,20 @@
 require 'fileutils'
 require 'UnArchive.rb'
 
+
+#----------------------------------------------------------------
+# Define all Constants for Program
+#----------------------------------------------------------------
+OUTPUT_FILE = "PluginVulnStats.csv"
+HUMAN_FILE = "PluginVulnStats.list"
+
 #----------------------------------------------------------------
 # Create an array, iterate through csv file and put into array
 #----------------------------------------------------------------
 
 plugins = Array.new
 
-begin
-    
+begin 
     if File.exist?("pluginStats.csv")
         f = File.new("pluginStats.csv", "r")
         i = 0
@@ -29,24 +35,42 @@ rescue
     Process.exit!
 end
 
-#create csv file for output
-f = File.new("PluginStats.csv", 'w')
-f.write("Plugin Name,Version,URL,SLOC,Total Vulnerabilities,Vulnerability Density,\n") #%x[echo "Plugin Name,Version,URL,SLOC,Total Vulnerabilities,Vulnerability Density," > PluginStats.csv]
+
+#---------------------------------------------------------------
+# create csv file for output
+#---------------------------------------------------------------
+
+f = File.new(OUTPUT_FILE, 'w')
+f.write("Plugin Name,Version,URL,SLOC,Total Vulnerabilities,Vulnerability Density,\n"
 f.close
 
 #---------------------------------------------------------------
 # Loop through array, scan all files and create stats file
 #---------------------------------------------------------------
 
-plugins.each do |plugin|
-    #create directory for each plugin and move into that directory
-    dir = plugin[0] + "_" + plugin[1]
-    Dir.mkdir(dir)
-    FileUtils.mv(plugin[3], dir) #%x[mv #{plugin[3]} #{dir}]
-    Dir.chdir(dir)
+# plugins array layout
+#   0 => Name
+#   1 => Version
+#   2 => URL
+#   3 => File Name
 
-    #unpack file
-    UnArchive.unpack(plugin[3])
+plugins.each do |plugin|
+
+    dir = plugin[0] + '_' + plugin[1]
+
+    #check if the file is already a directory (if so, skipping some steps)
+    if File.exist?(plugin[3]) and File.directory?(plugin[3])
+        File.rename( plugin[3], dir )
+        Dir.chdir(dir)
+    else
+        #create directory for each plugin and move into that directory
+        Dir.mkdir(dir)
+        FileUtils.mv(plugin[3], dir)
+        Dir.chdir(dir)
+
+        #unpack file
+        UnArchive.unpack(plugin[3])
+    end
 
     #create fpr
     %x[sourceanalyzer -b #{dir} "./**/*.php"]
@@ -76,7 +100,7 @@ plugins.each do |plugin|
     vulnDensity = (vuln/phpSloc) * 1000
 
     #put all information to a file
-    f = File.open("PluginStats.list", 'a')
+    f = File.open(HUMAN_FILE, 'a')
     f.write(dir + "\n")         #%x[echo "#{dir}" >> ../PluginStats.list]
     f.write("Total Vulnerabilities : " + vuln + "\n")        #%x[echo "Total Vulnrabilities : #{vuln}" >> ../PluginStats.list]
     f.write("SLOC Count : " + phpSloc + "\n")                   #%x[echo "SLOC Count : #{phpSloc}" >> ../PluginStats.list]
@@ -84,7 +108,7 @@ plugins.each do |plugin|
     f.close
 
     #create a csv file
-    f = File.open("PluginStats.csv", 'a')
+    f = File.open(OUTPUT_FILE, 'a')
     f.write(plugin[0] + ',')  #%x[echo -n "#{plugin[0]}," >> ../PluginStats.csv]
     f.write(plugin[1] + ',')  #%x[echo -n "#{plugin[1]}," >> ../PluginStats.csv]
     f.write(plugin[2] + ',')  #%x[echo -n "#{plugin[2]}," >> ../PluginStats.csv]
