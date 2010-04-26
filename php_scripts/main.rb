@@ -1,13 +1,17 @@
 #!/usr/bin/ruby
 require 'fileutils'
 require 'UnArchive.rb'
+require 'timeout'
 
 
 #----------------------------------------------------------------
 # Define all Constants for Program
 #----------------------------------------------------------------
+INPUT_FILE = "pluginStats.csv"
 OUTPUT_FILE = "PluginVulnStats.csv"
 HUMAN_FILE = "PluginVulnStats.list"
+ERROR_FILE = "PluginVulnErrors.list"
+TIMEOUT_DURATION = 20 * 60 #timeout for SCA scan in seconds
 
 #----------------------------------------------------------------
 # Create an array, iterate through csv file and put into array
@@ -16,8 +20,8 @@ HUMAN_FILE = "PluginVulnStats.list"
 plugins = Array.new
 
 begin 
-    if File.exist?("pluginStats.csv")
-        f = File.new("pluginStats.csv", "r")
+    if File.exist?(INPUT_FILE)
+        f = File.new(INPUT_FILE, "r")
         i = 0
         while (line = f.gets)
             plugins[i] = line.split(',')
@@ -26,12 +30,12 @@ begin
         plugins.delete_at(0)
     else
         #exit the code, the file does not exist
-        puts "The file pluginStats.csv does not exist"
+        puts "The file" + INPUT_FILE + "does not exist!"
         Process.exit!
     end
     
 rescue
-    puts "There was an error reading from the file pluginStats.csv"
+    puts "There was an error reading from the file: " + INPUT_FILE
     Process.exit!
 end
 
@@ -41,7 +45,7 @@ end
 #---------------------------------------------------------------
 
 f = File.new(OUTPUT_FILE, 'w')
-f.write("Plugin Name,Version,URL,SLOC,Total Vulnerabilities,Vulnerability Density,\n"
+f.write("Plugin Name,Version,URL,SLOC,Total Vulnerabilities,Vulnerability Density,\n")
 f.close
 
 #---------------------------------------------------------------
@@ -56,10 +60,19 @@ f.close
 
 plugins.each do |plugin|
 
+    #if there is no file, report an error and continue with the next plugin
+    if !File.exist?(plugin[3])
+        ef = File.new(ERROR_FILE, 'a')
+        ef.write(plugin[0] + '\n' + '   => No file exists\n\n')
+        ef.close
+        next
+    end
+    
+    #define the name of the folder to move the plugin into
     dir = plugin[0] + '_' + plugin[1]
 
     #check if the file is already a directory (if so, skipping some steps)
-    if File.exist?(plugin[3]) and File.directory?(plugin[3])
+    if File.directory?(plugin[3])
         File.rename( plugin[3], dir )
         Dir.chdir(dir)
     else
@@ -72,15 +85,24 @@ plugins.each do |plugin|
         UnArchive.unpack(plugin[3])
     end
 
-    #create fpr
-    %x[sourceanalyzer -b #{dir} "./**/*.php"]
-    %x[sourceanalyzer -b #{dir} -scan -f #{dir}.fpr]
+    #create fpr file with Fortify SCA
+    begin
+        Timeout::timeout(TIMEOUT_DURATION) {
+            `sourceanalyzer -b #{dir} "./**/*.php"`
+            `sourceanalyzer -b #{dir} -scan -f #{dir}.fpr`
+        }
+    rescue Timeout::Error
+        ef = File.new(ERROR_FILE, 'a')
+        ef.write(plugin[0] + '\n' + '   => Scan timeout\n\n')
+        ef.close
+        next
+    end
 
     #get type and sloccount
     Dir.mkdir("temp")
     File.copy(/*.fpr/, "temp")
     Dir.chdir("temp")
-    %x[unzip *.fpr]                     #NOT SURE HOW TO (IF POSSIBLE) IN RUBY
+    %x[unzip *.fpr] #NOT SURE HOW TO IN RUBY NATIVELY FROM CORE
     %x[fgrep '<Type>' audit.fvdl > ../VulnerabilityTypes.list;]
     Dir.chdir("../")
     FileUtils.rm_rf("temp")
@@ -101,20 +123,20 @@ plugins.each do |plugin|
 
     #put all information to a file
     f = File.open(HUMAN_FILE, 'a')
-    f.write(dir + "\n")         #%x[echo "#{dir}" >> ../PluginStats.list]
-    f.write("Total Vulnerabilities : " + vuln + "\n")        #%x[echo "Total Vulnrabilities : #{vuln}" >> ../PluginStats.list]
-    f.write("SLOC Count : " + phpSloc + "\n")                   #%x[echo "SLOC Count : #{phpSloc}" >> ../PluginStats.list]
-    f.write("Vulnerability Density : " + vulnDensity + "\n\n\n")    #%x[echo "Vulnerability Density : #{vulnDensity}\n\n" >> ../PluginStats.list]
+    f.write(dir + "\n")
+    f.write("Total Vulnerabilities : " + vuln + "\n")
+    f.write("SLOC Count : " + phpSloc + "\n")
+    f.write("Vulnerability Density : " + vulnDensity + "\n\n\n")
     f.close
 
     #create a csv file
     f = File.open(OUTPUT_FILE, 'a')
-    f.write(plugin[0] + ',')  #%x[echo -n "#{plugin[0]}," >> ../PluginStats.csv]
-    f.write(plugin[1] + ',')  #%x[echo -n "#{plugin[1]}," >> ../PluginStats.csv]
-    f.write(plugin[2] + ',')  #%x[echo -n "#{plugin[2]}," >> ../PluginStats.csv]
-    f.write(phpSloc + ',')  #%x[echo -n "#{phpSloc}," >> ../PluginStats.csv]
-    f.write(vuln + ',')  #%x[echo -n "#{vuln}," >> ../PluginStats.csv]
-    f.write(vulnDensity + ',')  #%x[echo "#{vulnDensity}," >> ../PluginStats.csv]
+    f.write(plugin[0] + ',')
+    f.write(plugin[1] + ',')
+    f.write(plugin[2] + ',')
+    f.write(phpSloc + ',')
+    f.write(vuln + ',')
+    f.write(vulnDensity + ',')
     f.close
 
 
