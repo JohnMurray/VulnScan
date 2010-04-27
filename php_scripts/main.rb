@@ -79,21 +79,26 @@ plugins.each do |plugin|
         #create directory for each plugin and move into that directory
         Dir.mkdir(dir)
         FileUtils.mv(plugin[3], dir)
-        Dir.chdir(dir)
-
-        #unpack file
-        UnArchive.unpack(plugin[3])
+        Dir.chdir(dir)        
     end
 
-    #create fpr file with Fortify SCA
     begin
+        #unpack
+        UnArchive.unpack(plugin[3]) 
+        
+        #create fpr file with Fortify SCA
         Timeout::timeout(TIMEOUT_DURATION) {
             `sourceanalyzer -b #{dir} "./**/*.php"`
             `sourceanalyzer -b #{dir} -scan -f #{dir}.fpr`
         }
     rescue Timeout::Error
         ef = File.new(ERROR_FILE, 'a')
-        ef.write(plugin[0] + '\n' + '   => Scan timeout\n\n')
+        ef.write(plugin[0] + "\n  => Scan timeout\n\n")
+        ef.close
+        next
+    rescue
+        ef = File.new(ERROR_FILE, 'a')
+        ef.write(plugin[0] + "\n  => UnArchive error\n\n")
         ef.close
         next
     end
@@ -136,7 +141,7 @@ plugins.each do |plugin|
     f.write(plugin[2] + ',')
     f.write(phpSloc + ',')
     f.write(vuln + ',')
-    f.write(vulnDensity + ',')
+    f.write(vulnDensity + ',' + "\n")
     f.close
 
 
