@@ -1,10 +1,18 @@
-Project Name: VulnScan - a vulnerability scanner in Ruby using Fortify SCA.
+Project Name: VulnScan - a vulnerability scanner in Ruby using Fortify 
+SCA.
 Authors: Robert Lenhof, Andrew Plunkett, John Murray, Troy Crosley
 Overseeing Professors: Dr. Maureen Doyle, Dr. James Walden
-Licensing: N/A
+Licensing: --
 
 Description:
-	The goal of VulnScan is to create a set of tools that can be used for automated vulnerability metric collection on various open source project's plug-in repositories. The currently implemented method for scanning source code is to use Fortify's Source Code Analyzer.
+	--the long description of the project here
 	
 Notes:
-	N/A
+	--whatever else you might want to save
+	-- program only supports following formats
+		...
+		tar
+		zip
+		etc.
+		...
+	-- etc.
