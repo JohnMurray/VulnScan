@@ -6,7 +6,7 @@
 require 'rubygems'
 require 'mechanize'
 require 'fileutils'
-require 'hpricot'
+#require 'hpricot'
 
 
 
@@ -17,8 +17,10 @@ require 'hpricot'
 BASE_URL = Array.new()
 BASE_URL[0] = 'http://squirrelmail.org/plugins_category.php?category_id=all'
 BASE_URL[1] = 'http://wordpress.org/extend/plugins/browse/new/page/'
+BASE_URL[2] = 'http://www.mediawiki.org'
 FILENAME = 'pluginStats.csv'
 ERROR_FILE = 'fetch_errors.txt'
+CHROME_USER_AGENT = 'Mozilla/5.0 (Windows; U; Windows NT 6.1; en-US) AppleWebKit/532.5 (KHTML, like Gecko) Chrome/4.1.249.1064 Safari/532.5'
 
 
 
@@ -29,7 +31,7 @@ ERROR_FILE = 'fetch_errors.txt'
 def main()
 
 	#check flags from command line (currently statically implemented)
-	page_to_crawl = BASE_URL[1]
+	page_to_crawl = BASE_URL[2]
 
 	#create file for reporting to
 	write_headers_to_file()
@@ -40,6 +42,8 @@ def main()
 			fetch_squirrelmail()
 		when BASE_URL[1]
 			fetch_wordpress(BASE_URL[1])
+        when BASE_URL[2]
+            fetch_media_wiki(BASE_URL[2])
 	end
 	
 end
@@ -63,7 +67,7 @@ def fetch_wordpress(base_url)
 
 	#Fetch the total number of plugin pages from wordpress' website
 	num_of_plugin_pages = 0
-	agent = WWW::Mechanize.new
+	agent = Mechanize.new
 	page = agent.get(base_url + '1/')
 	page.links.each do |link|
 		if link.href =~ /extend\/plugins\/browse\/new\/page\//
@@ -76,7 +80,7 @@ def fetch_wordpress(base_url)
 	#loop through all of the pages and get all of the needed data
 	(1..num_of_plugin_pages).each do |i|
 		#define a browser agent for searching web pages
-		agent = WWW::Mechanize.new
+		agent = :Mechanize.new
 		page0 = agent.get(base_url + i.to_s + "/")
 		page0.links.each do |link0|
 
@@ -140,6 +144,55 @@ def fetch_wordpress(base_url)
 		end
 	end
 end
+
+
+
+
+
+def fetch_media_wiki(base_url)
+
+    #starting with the first page, loop through all plugin pages
+    agent = Mechanize.new
+    agent.user_agent = CHROME_USER_AGENT
+    outer_page = agent.get(base_url + '/wiki/Special:AllPages/Extension:')
+
+    next_page = ''
+
+    begin
+    
+        current_page = next_page
+        
+        if(current_page != '')
+            agent = Mechanize.new
+            agent.user_agent = CHROME_USER_AGENT
+            outer_page = agent.get(base_url + current_page)
+        end
+
+        outer_page.links.each do |link|
+            #see if we are on the last page
+            if link.text =~ /^Next page \(/
+                next_page = link.href
+
+            #check if we are on a extension
+            elsif link.href =~ /\/wiki\/Extension:/
+                inner_page = agent.get(base_url + link.href)
+
+                #start collecting stats on plugins
+                plugin_items = Array.new(4)
+
+                plugin[0] = link.text #name
+                plugin[2] = base_url + link.href #URL
+
+                #loop through all links in inner page to find download
+                
+
+            end
+        end
+
+    end while next_page != current_page
+
+end
+
 
 
 
