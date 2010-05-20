@@ -6,7 +6,8 @@
 require 'rubygems'
 require 'mechanize'
 require 'fileutils'
-#require 'hpricot'
+require 'hpricot'
+require 'repository_module'
 
 
 
@@ -20,7 +21,6 @@ BASE_URL[1] = 'http://wordpress.org/extend/plugins/browse/new/page/'
 BASE_URL[2] = 'http://www.mediawiki.org'
 FILENAME = 'pluginStats.csv'
 ERROR_FILE = 'fetch_errors.txt'
-CHROME_USER_AGENT = 'Mozilla/5.0 (Windows; U; Windows NT 6.1; en-US) AppleWebKit/532.5 (KHTML, like Gecko) Chrome/4.1.249.1064 Safari/532.5'
 
 
 
@@ -148,13 +148,18 @@ end
 
 
 
-
+##-----------------------------------------------------------------------------
+## FUNCTION: fetch_media_wiki
+## PURPOSE: fetch plugins from mediawiki and write to file
+##-----------------------------------------------------------------------------
 def fetch_media_wiki(base_url)
 
     #starting with the first page, loop through all plugin pages
     agent = Mechanize.new
-    agent.user_agent = CHROME_USER_AGENT
+    agent.user_agent = Repository::CHROME_USER_AGENT
     outer_page = agent.get(base_url + '/wiki/Special:AllPages/Extension:')
+
+    error_log = ErrorLog.new
 
     next_page = ''
 
@@ -164,7 +169,7 @@ def fetch_media_wiki(base_url)
         
         if(current_page != '')
             agent = Mechanize.new
-            agent.user_agent = CHROME_USER_AGENT
+            agent.user_agent = Repository::CHROME_USER_AGENT
             outer_page = agent.get(base_url + current_page)
         end
 
@@ -178,16 +183,132 @@ def fetch_media_wiki(base_url)
                 inner_page = agent.get(base_url + link.href)
 
                 #start collecting stats on plugins
-                plugin_items = Array.new(4)
+                results = Array.new(4)
 
-                plugin[0] = link.text #name
-                plugin[2] = base_url + link.href #URL
+                results[0] = link.text #name
+                results[2] = base_url + link.href #URL
+                results[3] = 'N/A'
+
+                begin
+                    #create a folder for the project
+                    dir_name = results[0].gsub('/', '.').force_encoding('US-ASCII')
+                    if File.directory? dir_name
+                        dir_name = dir_name + '_2'
+                    end
+                    Dir.mkdir(dir_name)
+                    Dir.chdir(dir_name)
+                rescue Exception => e
+                    error_log.report("Directory Creation: " + dir_name +
+                            "\n\t\t" + e.message)
+                    next
+                end
 
                 #loop through all links in inner page to find download
-                
+                #there exist serveral types of downloads (svn, code on page, etc.)
+                inner_page.links.each do |inner_link|
+
+
+                    #-----------------------------------------------------------
+                    # start check for subversion
+                    #-----------------------------------------------------------
+                    #if files are stored in a subversion repo. w/ web acces
+                    if (inner_link.text =~ /svn/i || inner_link.text =~ /subversion/i) &&
+                      !(inner_link.text =~ /browse svn/i || inner_link.text =~ /download from svn/i)
+
+                        #check if the link has a protocol (external)
+                        if inner_link.href =~ /:\/\//
+                            svn_url = inner_link.href
+                        else
+                            svn_url = base_url + inner_link.href
+                        end
+
+                        Repository.retrieve_svn_files(svn_url)
+
+                        #don't get any more code on this page if we have already
+                        #collected SVN information
+                        break
+
+                    end
+                    #-----------------------------------------------------------
+                    # end check for subversion
+                    #-----------------------------------------------------------
+
+
+
+
+
+
+                    #-----------------------------------------------------------
+                    # check for a git-hub accound storage
+                    #-----------------------------------------------------------
+                    if( inner_link.href =~ /github\.com/ )
+
+                        #there exists a git-hub link
+                        #go the account and attempt to retrive source files
+                        #should the assumption be made that this is the code?
+
+                    end
+                    #-----------------------------------------------------------
+                    # end check for git-hub
+                    #-----------------------------------------------------------
+
+
+
+
+                    #-----------------------------------------------------------
+                    # check if form must be submitted to get source
+                    #-----------------------------------------------------------
+
+                    #-----------------------------------------------------------
+                    # end check for form
+                    #-----------------------------------------------------------
+
+
+
+
+
+                    #-----------------------------------------------------------
+                    # check if the code is written on the page
+                    #-----------------------------------------------------------
+
+                    #-----------------------------------------------------------
+                    # end check for code on page
+                    #-----------------------------------------------------------
+
+
+
+
+                    #get the version of the plugins (if there is one)
+                    #define the default if none if found
+                    results[1] = 'N/A'
+                    if inner_link.text =~ /last version/i
+                        #there exists a version.... so get it. lol.
+                        Hpricot(inner_page.body).search('b').each do |item|
+                            if item.inner_text =~ /last version/i
+                                item.parent.parent.parent.search('td').each do |item2|
+                                    if !(item2.inner_text =~ /last version/i)
+                                        results[1] = item2.inner_text
+                                        break
+                                    end
+                                end
+                            end
+                        end
+                    end
+
+                end #end inner page
+
+
+
+                #now that we're done with the project, exit the project folder
+                Dir.chdir('..')
+
+                #write results to file
+                write_to_file(results)
+
 
             end
-        end
+
+        end #end outer page
 
     end while next_page != current_page
 
@@ -225,7 +346,6 @@ def get_command_line_arguments()
 	end
 
 end
-
 
 
 
