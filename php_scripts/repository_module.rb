@@ -1,4 +1,5 @@
-require 'Mechanize'
+require 'rubygems'
+require 'mechanize'
 require 'fileutils'
 require 'hpricot'
 
