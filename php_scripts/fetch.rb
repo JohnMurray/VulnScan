@@ -330,7 +330,7 @@ def fetch_modx(base_url)
     #get an array of all the pages
     outer_page.links.each do |link|
 
-        if link.href =~ /extras\/package\//
+        if link.href =~ /extras\/package\// && link.text =~ /more info/i
 
             inner_agent = Mechanize.new
             inner_agent.user_agent = Repository::CHROME_USER_AGENT
@@ -355,6 +355,7 @@ def fetch_modx(base_url)
                             dl = inner_agent.get(dl.href)
                             wgetfile.write( dl.body )
                             wgetfile.close
+                            break
                         end
                     end
 
@@ -372,7 +373,7 @@ def fetch_modx(base_url)
             results[0] = title.split('|')[0]
 
             #get URL
-            results[2] = link.href
+            results[2] = 'http://www.modxcms.com/' + link.href
 
             write_to_file(results)
 
