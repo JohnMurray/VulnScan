@@ -19,7 +19,7 @@ BASE_URL = Array.new()
 BASE_URL[0] = 'http://squirrelmail.org/plugins_category.php?category_id=all'
 BASE_URL[1] = 'http://wordpress.org/extend/plugins/browse/new/page/'
 BASE_URL[2] = 'http://www.mediawiki.org'
-BASE_URL[3] = 'http://modxcms.com/extras/search.html?query=&limit=0'
+BASE_URL[3] = 'http://modxcms.com/extras/search.html?query=&start=290&limit=20'#'http://modxcms.com/extras/search.html?query=&limit=0'
 FILENAME = 'pluginStats.csv'
 ERROR_FILE = 'fetch_errors.txt'
 
@@ -341,27 +341,31 @@ def fetch_modx(base_url)
             #set filename to empty
             results[3] = 'N/A'
 
-            inner_page.links.each do |inner_link|
+            begin
+                inner_page.links.each do |inner_link|
 
-                if inner_link.href =~ /extras\/download\//
+                    if inner_link.href =~ /extras\/download\//
 
-                    #if there is a file, record it
-                    #and downlaod file
-                    download_page = inner_agent.get( 'http://www.modxcms.com/' + inner_link.href)
-                    download_page.links.each do |dl|
-                        if dl.href =~ /extras\/dl.html\?file=/
-                            results[3] = inner_link.text.to_s.gsub(/^[\n ]+/, '')
-                            wgetfile = File.new( inner_link.text.to_s.gsub(/^[\n ]+/, ''), 'wb')
-                            dl = inner_agent.get(dl.href)
-                            wgetfile.write( dl.body )
-                            wgetfile.close
-                            break
+                        #if there is a file, record it
+                        #and downlaod file
+                        download_page = inner_agent.get( 'http://www.modxcms.com/' + inner_link.href)
+                        download_page.links.each do |dl|
+                            if dl.href =~ /extras\/dl.html\?file=/
+                                results[3] = inner_link.text.to_s.gsub(/^\n +/, '').chomp
+                                wgetfile = File.new( 'test', 'w')#results[3], 'w')
+                                dl_file = inner_agent.get(dl.href)
+                                wgetfile.write( dl_file.body )
+                                wgetfile.close
+                                break
+                            end
                         end
+
                     end
 
-                end
-
-            end #end inner page links
+                end #end inner page links
+            rescue Exception => e
+                next
+            end
 
             #get version
             h = Hpricot( inner_page.body )
