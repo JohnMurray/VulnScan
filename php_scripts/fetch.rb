@@ -19,7 +19,7 @@ BASE_URL = Array.new()
 BASE_URL[0] = 'http://squirrelmail.org/plugins_category.php?category_id=all'
 BASE_URL[1] = 'http://wordpress.org/extend/plugins/browse/new/page/'
 BASE_URL[2] = 'http://www.mediawiki.org'
-BASE_URL[3] = 'http://modxcms.com/extras/search.html?query=&start=290&limit=20'#'http://modxcms.com/extras/search.html?query=&limit=0'
+BASE_URL[3] = 'http://modxcms.com/extras/search.html?query=&limit=0'
 FILENAME = 'pluginStats.csv'
 ERROR_FILE = 'fetch_errors.txt'
 
@@ -352,7 +352,7 @@ def fetch_modx(base_url)
                         download_page.links.each do |dl|
                             if dl.href =~ /extras\/dl.html\?file=/
                                 results[3] = inner_link.text.to_s.gsub(/^\n +/, '').chomp
-                                wgetfile = File.new( 'test', 'w')#results[3], 'w')
+                                wgetfile = File.new( results[3], 'w')
                                 dl_file = inner_agent.get(dl.href)
                                 wgetfile.write( dl_file.body )
                                 wgetfile.close
