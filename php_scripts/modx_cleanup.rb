@@ -1,7 +1,23 @@
-#!/bin/bash
+#!/usr/bin/ruby
 
 require 'rubygems'
 require 'fileutils'
+
+
+#remove duplicate entries (can't figure out how they got in there, but they both point to same file)
+begin
+    f = File.new( 'pluginStats.csv', 'r' )
+    fw = Filew.new( 'plginStats.csv.copy', 'w')
+    newFileContents = Array.new
+    while line = f.gets
+        newFileContents.push( line )
+        if newFileContents.length > 2
+            
+        end
+    end
+rescue => err
+    puts "Exception: #{err}"
+end
 
 
 begin
