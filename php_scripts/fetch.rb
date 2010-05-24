@@ -359,7 +359,9 @@ def fetch_modx(base_url)
                                 break
                             end
                         end
-
+                        
+                        break
+                        
                     end
 
                 end #end inner page links

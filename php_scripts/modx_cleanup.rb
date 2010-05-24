@@ -7,17 +7,18 @@ require 'fileutils'
 #remove duplicate entries (can't figure out how they got in there, but they both point to same file)
 begin
     f = File.new( 'pluginStats.csv', 'r' )
-    fw = Filew.new( 'plginStats.csv.copy', 'w')
+    fw = File.new( 'pluginStats.csv.copy', 'w')
     newFileContents = Array.new
     while line = f.gets
         if newFileContents.length > 2
            if line != newFileContents.last
-                newFileContents.push( last )
+                newFileContents.push( line )
             end
         else
-            newFileContents.push( last )
+            newFileContents.push( line )
         end
     end
+    newFileContents.each { |line| fw.write(line) }
 
     f.close
     fw.close
@@ -34,6 +35,7 @@ begin
     f = File.new( 'pluginStats.csv', 'r' )
     while line = f.gets
         plugin_stats = line.split(',')
+        puts line
         if plugin_stats[3] =~ /\.txt$/
             old_filename = plugin_stats[3]
             plugin_stats[3] = plugin_stats[3].gsub(/\.txt$/, '.php')
@@ -43,8 +45,8 @@ begin
     end
     fw.close
     f.close
-    File.delete( 'plugin_stats.csv' )
-    File.rename( 'plugin_stats.csv.copy', 'plugin_stats.csv' )
+    File.delete( 'pluginStats.csv' )
+    File.rename( 'pluginStats.csv.copy', 'pluginStats.csv' )
 rescue => err
     puts "Exception: #{err}"
     err
