@@ -10,16 +10,25 @@ begin
     fw = Filew.new( 'plginStats.csv.copy', 'w')
     newFileContents = Array.new
     while line = f.gets
-        newFileContents.push( line )
         if newFileContents.length > 2
-            
+           if line != newFileContents.last
+                newFileContents.push( last )
+            end
+        else
+            newFileContents.push( last )
         end
     end
+
+    f.close
+    fw.close
+    File.delete( 'pluginStats.csv' )
+    File.rename( 'pluginStats.csv.copy', 'pluginStats.csv' )
+    
 rescue => err
     puts "Exception: #{err}"
 end
 
-
+#change all .txt files to be .php files
 begin
     fw = File.new( 'pluginStats.csv.copy', 'w' )
     f = File.new( 'pluginStats.csv', 'r' )
