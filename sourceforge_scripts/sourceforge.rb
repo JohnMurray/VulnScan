@@ -11,14 +11,11 @@ ENTRY_PAGE = "http://www.sourceforge.net/softwaremap/?type_of_search=soft&sort=l
 OUTPUT_FILE = "sourceforge_data.xml"
 
 
-
-def prepare_output_file()
-    File.open( OUTPUT_FILE, 'w' ) { |f| f.write( 'name, size, date, downloads, depth,' ) }
-end
-
-
-
-
+##--------------------------------------------------------
+## Function: generate_download_data
+## Purpose: gen. download data given a project home-page
+##          on sourceforge
+##--------------------------------------------------------
 def generate_download_data(project_url, project_name)
     
     begin
@@ -65,8 +62,11 @@ def generate_download_data(project_url, project_name)
 
 end
 
-#parepare new file to write to
-#prepare_output_file()
+
+##--------------------------------------------------------
+## Start execution of the script here
+##--------------------------------------------------------
+
 
 #define agent for the entry page
 agent = Mechanize.new
