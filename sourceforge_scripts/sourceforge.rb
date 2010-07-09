@@ -9,6 +9,7 @@ require 'progressbar'
 BASE_URL = "http://www.sourceforge.net"
 ENTRY_PAGE = "http://www.sourceforge.net/softwaremap/?type_of_search=soft&sort=latest_file_date&sortdir=desc&limit=100&offset="
 OUTPUT_FILE = "sourceforge_data.xml"
+ERROR_FILE = "sourceforge_errors.txt"
 
 
 ##--------------------------------------------------------
@@ -21,8 +22,10 @@ def generate_download_data(project_url, project_name)
     begin
         h = Hpricot( Mechanize.new.get(project_url).body )
     rescue Exception => err
+	File.open( ERROR_FILE, 'a') { |ef| ef.write("Error, unable to access page: #{project_url}\n\n")}
         puts "Error, unable to access page: #{project_url}"
         puts "Error message:\n\t#{err.message}"
+	return
     end
     
     table = h.search("//table[@class='filesTable treeTable']")[0]
