@@ -22,7 +22,7 @@ def generate_download_data(project_url, project_name)
     begin
         h = Hpricot( Mechanize.new.get(project_url).body )
     rescue Exception => err
-	File.open( ERROR_FILE, 'a') { |ef| ef.write("Error, unable to access page: #{project_url}\n\n")}
+	File.open( ERROR_FILE, 'a') { |ef| ef.write("Error, unable to access page: #{project_url}\n")}
         puts "Error, unable to access page: #{project_url}"
         puts "Error message:\n\t#{err.message}"
 	return
@@ -40,7 +40,7 @@ def generate_download_data(project_url, project_name)
             name = ((tr/:td)[0]/:a)[0].inner_html
             size = (tr/:td)[2].inner_html
             date = (tr/:td)[3].inner_html
-            downloads = (tr/:td)[4].inner_html.to_i
+            downloads = (tr/:td)[4].inner_html
 
             #get depth
             if tr.attributes['class'] =~ /parent/i
@@ -88,7 +88,7 @@ end
 fail "Could not retrieve number of pages." if num_pages == 0
 
 #iterate for each listing page (with progressbar)
-pbar = ProgressBar.new("Sourceforge Data", num_pages)
+pbar = ProgressBar.new("SF Data", num_pages)
 0.upto( num_pages - 1 ) do |page_num|
     agent = Mechanize.new
     listing_page = agent.get( ENTRY_PAGE + (page_num * 100).to_s )
