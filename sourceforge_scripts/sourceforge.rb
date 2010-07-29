@@ -35,6 +35,7 @@ def generate_download_data(project_url, project_name)
     
     #set the depth and iterate through table of items (files/folders)
     depth = 0
+    current_parent = ''
     parent_stack = Array.new
     (table/:tr).each do |tr|
         if (tr/:td).size > 2
@@ -44,29 +45,38 @@ def generate_download_data(project_url, project_name)
             downloads = (tr/:td)[4].inner_html
 
             #get depth
+            #COMMENTED OUT FOR NOW
+=begin
             child = false
             if tr.attributes['class'] =~ /child-of-node-([^ '"]*)/i
-                if ((parent_stack.length > 0 && parent_stack[parent_stack.length - 1] != $1) || parent_stack.length == 0)
+                current_parent = $1
+                child = true
+                if (parent_stack[parent_stack.length - 1] != $1 || parent_stack.length == 0)
                     if (!parent_stack.include?($1))
                         depth += 1
                         parent_stack << $1
                     else
-                        while parent_stack[parent_stack.length != $1 && depth >= 0
+                        while( parent_stack[parent_stack.length] != $1 && depth >= 0 )
                             parent_stack.pop
                             depth -= 1
                         end
                     end
                 end
-                child == true
             end
             if tr.attributes['class'] =~ /parent/i
                 if child
-                    if parent_stack[parent_stack.length - 1] != $1 && $1 != nil
+                     while(parent_stack[parent_stack.length - 1] != current_parent && current_parent != '')
                         parent_stack.pop
                         depth -= 1 if depth > 0
                     end
+                else
+                    depth = 0
+                    parent_stack = Array.new
                 end
             end
+=end
+            depth = 0
+            next if tr.attributes['class'] =~ /child-of-node/
 
             #write to file
             File.open( OUTPUT_FILE, 'a' ) { |f| 
